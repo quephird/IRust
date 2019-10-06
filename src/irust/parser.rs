@@ -225,7 +225,7 @@ impl IRust {
 
         Ok(Printer::new(PrinterItem::new(
             irust,
-            PrinterItemType::Custom(crossterm::Color::Red),
+            PrinterItemType::Custom(Some(crossterm::Color::Red)),
         )))
     }
 }

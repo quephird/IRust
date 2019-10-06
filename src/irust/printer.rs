@@ -40,6 +40,23 @@ impl Printer {
     pub fn iter(&self) -> impl Iterator<Item = &PrinterItem> {
         self.items.iter()
     }
+
+    pub fn from_string(string: String) -> Self {
+        let mut printer = Printer::default();
+        string.lines().for_each(|l| {
+            printer.push(PrinterItem::new(
+                l.to_owned(),
+                PrinterItemType::Custom(None),
+            ));
+            printer.add_new_line(1);
+        });
+
+        if !string.ends_with('\n') {
+            printer.pop();
+        }
+
+        printer
+    }
 }
 
 impl Iterator for Printer {
@@ -98,7 +115,7 @@ pub enum PrinterItemType {
     Shell,
     Err,
     NewLine,
-    Custom(Color),
+    Custom(Option<Color>),
 }
 
 impl Default for PrinterItemType {
@@ -108,7 +125,7 @@ impl Default for PrinterItemType {
 }
 
 impl IRust {
-    pub fn print_input(&mut self) -> Result<(), IRustError> {
+    pub fn print_input(&mut self, color: bool) -> Result<(), IRustError> {
         self.cursor.hide();
         // scroll if needed before writing the input
         self.scroll_if_needed_for_input();
@@ -117,10 +134,23 @@ impl IRust {
         self.raw_terminal.clear(ClearType::FromCursorDown)?;
 
         self.write_from_terminal_start(super::IN, Color::Yellow)?;
-        self.print_inner(highlight(&self.buffer.to_string()))?;
+
+        let printer = if color {
+            highlight(&self.buffer.to_string())
+        } else {
+            Printer::from_string(self.buffer.to_string())
+        };
+
+        self.print_inner(printer)?;
 
         self.cursor.restore_position()?;
         self.cursor.show();
+
+        if color {
+            self.lock_racer_update()?;
+        } else {
+            self.unlock_racer_update()?;
+        }
 
         Ok(())
     }
@@ -129,8 +159,6 @@ impl IRust {
         for elem in printer {
             match elem.string_type {
                 PrinterItemType::Custom(color) => {
-                    let _ = self.raw_terminal.set_fg(color);
-
                     for c in elem.string.chars() {
                         self.write(&c.to_string(), color)?;
                         if self.cursor.is_at_col(super::INPUT_START_COL) {
@@ -141,7 +169,7 @@ impl IRust {
                 PrinterItemType::NewLine => {
                     self.cursor.bound_current_row_at_current_col();
                     self.cursor.goto_next_row_terminal_start();
-                    self.write("..: ", Color::Yellow)?;
+                    self.write("..: ", Some(Color::Yellow))?;
                 }
                 _ => {}
             }
@@ -162,7 +190,8 @@ impl IRust {
                 PrinterItemType::Out => self.options.out_color,
                 PrinterItemType::Shell => self.options.shell_color,
                 PrinterItemType::Err => self.options.err_color,
-                PrinterItemType::Custom(color) => color,
+                PrinterItemType::Custom(Some(color)) => color,
+                PrinterItemType::Custom(None) => Color::White,
                 PrinterItemType::NewLine => {
                     self.cursor.goto_next_row_terminal_start();
                     self.cursor.use_current_row_as_starting_row();

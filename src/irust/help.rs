@@ -8,7 +8,7 @@ pub trait ColoredPrinterItem {
 
 impl<T: ToString> ColoredPrinterItem for T {
     fn to_output(&self, color: Color) -> PrinterItem {
-        PrinterItem::new(self.to_string(), PrinterItemType::Custom(color))
+        PrinterItem::new(self.to_string(), PrinterItemType::Custom(Some(color)))
     }
 }
 

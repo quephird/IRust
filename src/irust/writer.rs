@@ -3,13 +3,17 @@ use crossterm::{ClearType, Color};
 use crate::irust::{IRust, IRustError};
 
 impl IRust {
-    pub fn write(&mut self, out: &str, color: Color) -> Result<(), IRustError> {
-        self.raw_terminal.set_fg(color)?;
+    pub fn write(&mut self, out: &str, color: Option<Color>) -> Result<(), IRustError> {
+        if let Some(color) = color {
+            self.raw_terminal.set_fg(color)?;
+        }
         for c in out.chars() {
             self.raw_terminal.write(c)?;
             self.cursor.move_right_unbounded();
         }
-        self.raw_terminal.reset_color()?;
+        if color.is_some() {
+            self.raw_terminal.reset_color()?;
+        }
         Ok(())
     }
 
@@ -21,7 +25,7 @@ impl IRust {
 
     pub fn write_from_terminal_start(&mut self, out: &str, color: Color) -> Result<(), IRustError> {
         self.cursor.goto(0, self.cursor.pos.current_pos.1);
-        self.write(out, color)?;
+        self.write(out, Some(color))?;
         Ok(())
     }
 
@@ -44,7 +48,7 @@ impl IRust {
         self.cursor.pos.starting_pos = (0, 0);
         self.cursor.goto(4, 0);
         self.cursor.bound.reset();
-        self.print_input()?;
+        self.print_input(false)?;
         Ok(())
     }
 
@@ -56,7 +60,7 @@ impl IRust {
 
     pub fn write_from_next_line(&mut self) -> Result<(), IRustError> {
         self.buffer.insert('\n');
-        self.print_input()?;
+        self.print_input(false)?;
         self.cursor.goto(4, self.cursor.pos.current_pos.1 + 1);
         Ok(())
     }

@@ -385,7 +385,7 @@ impl IRust {
                 self.cursor.move_right_unbounded();
             }
 
-            self.print_input()?;
+            self.print_input(false)?;
         }
 
         Ok(())
@@ -407,14 +407,12 @@ impl IRust {
 
     pub fn check_racer_callback(&mut self) -> Result<(), IRustError> {
         let mut inner = || -> Result<(), IRustError> {
-            if let Some(character) = self.buffer.previous_char() {
-                if character.is_alphanumeric()
-                    && !self.racer_update_locked()?
-                    && self.debouncer.recv.try_recv().is_ok()
-                {
-                    self.update_suggestions()?;
-                    self.write_first_suggestion()?;
-                }
+            // if let Some(character) = self.buffer.previous_char() {
+            //     if character.is_alphanumeric()
+            if !self.racer_update_locked()? && self.debouncer.recv.try_recv().is_ok() {
+                self.print_input(true)?;
+                //self.update_suggestions()?;
+                //self.write_first_suggestion()?;
             }
             Ok(())
         };

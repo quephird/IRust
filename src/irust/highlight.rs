@@ -26,7 +26,7 @@ pub fn highlight(c: &str) -> Printer {
                 printer.push(PrinterItem::new(
                     // trim() because we dont want the new line (we kept it for syntect parser)
                     part.trim_end_matches('\n').to_string(),
-                    PrinterItemType::Custom(fg_color),
+                    PrinterItemType::Custom(Some(fg_color)),
                 ));
             });
         printer.add_new_line(1);

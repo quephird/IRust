@@ -83,7 +83,7 @@ impl IRust {
 
     pub fn run(&mut self) -> Result<(), IRustError> {
         self.prepare()?;
-        let mut stdin = TerminalInput::new().read_sync();
+        let mut stdin = TerminalInput::new().read_async();
         let _screen = crossterm::RawScreen::into_raw_mode()?;
 
         loop {
